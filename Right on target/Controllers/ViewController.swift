@@ -2,14 +2,84 @@ import UIKit
 
 class ViewController: UIViewController {
     
-    //загаданное число
-    var number: Int = 0
+    var game: Game!
     
-    //раунд
-    var round: Int = 1
+    // MARK: - Lifecycle
+    override func loadView() {
+        super.loadView()
+        
+        view.addSubview(secretNumberLabel)
+        view.addSubview(startButton)
+        view.addSubview(slider)
+        
+    }
     
-    //сумма очков за раунд
-    var points: Int = 0
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        // Create Game entity
+        game = Game(startValue: 1, endValue: 50, rounds: 5)
+        
+        // Update data about current value of secret number
+        updateLabelWithSecretNumber(newText: String(game.currentSecretValue))
+        
+        view.backgroundColor = greenColor
+        startButton.backgroundColor = redColor
+        slider.tintColor = redColor
+        slider.thumbTintColor = redColor
+        slider.maximumTrackTintColor = offRedColor
+        
+        
+        secretNumberLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
+        secretNumberLabel.topAnchor.constraint(equalTo: view.topAnchor, constant: 50).isActive = true
+        secretNumberLabel.widthAnchor.constraint(equalTo: view.widthAnchor).isActive = true
+        secretNumberLabel.heightAnchor.constraint(equalToConstant: 30).isActive = true
+        
+        slider.centerYAnchor.constraint(equalTo: view.centerYAnchor).isActive = true
+        slider.widthAnchor.constraint(equalToConstant: view.frame.width).isActive = true
+        slider.heightAnchor.constraint(equalToConstant: 30).isActive = true
+        
+        startButton.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
+        startButton.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: 100).isActive = true
+        startButton.widthAnchor.constraint(equalToConstant: 100).isActive = true
+        startButton.heightAnchor.constraint(equalToConstant: 30).isActive = true
+        
+    }
+    
+    // MARK: - Interaction between View and Model
+    
+    // Check chosen number
+    @objc func checkNumber() {
+        
+        // Subtract points for the round
+        game.calculateScore(with: Int(slider.value))
+        // Check the game is not ended
+        if game.isGameEnded {
+            showAlertWith(score: game.score)
+            //Begin the game again
+            game.restartGame()
+        } else {
+            game.startNewRound()
+        }
+        // Update data about current value of secret number
+        updateLabelWithSecretNumber(newText: String(game.currentSecretValue))
+        
+    }
+    
+    // MARK: - View update
+    // Update the text of the secret value
+    private func updateLabelWithSecretNumber(newText: String) {
+        secretNumberLabel.text = newText
+    }
+    
+    private func showAlertWith(score: Int) {
+        let alert = UIAlertController(
+            title: "Game over",
+            message: "You've earned \(score) points",
+            preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Restart", style: .default))
+        self.present(alert, animated: true)
+    }
     
     //sRGB colors
     let redColor: UIColor = UIColor(red: 255/255.0, green: 111/255.0, blue: 125/255.0, alpha: 1.0)
@@ -22,11 +92,11 @@ class ViewController: UIViewController {
         button.setTitleColor(.white, for: .normal)
         button.layer.cornerRadius = 8
         button.translatesAutoresizingMaskIntoConstraints = false
-        button.addTarget(self, action: #selector(startGame), for: .touchUpInside)
+        button.addTarget(self, action: #selector(checkNumber), for: .touchUpInside)
         return button
     }()
     
-    var numberLabel: UILabel = {
+    var secretNumberLabel: UILabel = {
         let label = UILabel()
         label.text = "0"
         label.font = UIFont.boldSystemFont(ofSize: 20.0)
@@ -44,95 +114,7 @@ class ViewController: UIViewController {
         slider.translatesAutoresizingMaskIntoConstraints = false
         return slider
     }()
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        print("viewDidLoad")
-        
-        //генерация случайного числа
-        self.number = Int.random(in: 1...100)
-        
-        //
-        self.numberLabel.text = String(self.number)
-        
-        view.backgroundColor = greenColor
-        startButton.backgroundColor = redColor
-        slider.tintColor = redColor
-        slider.thumbTintColor = redColor
-        slider.maximumTrackTintColor = offRedColor
-
-        
-        numberLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
-        numberLabel.topAnchor.constraint(equalTo: view.topAnchor, constant: 50).isActive = true
-        numberLabel.widthAnchor.constraint(equalTo: view.widthAnchor).isActive = true
-        numberLabel.heightAnchor.constraint(equalToConstant: 30).isActive = true
-        
-        slider.centerYAnchor.constraint(equalTo: view.centerYAnchor).isActive = true
-        slider.widthAnchor.constraint(equalToConstant: view.frame.width).isActive = true
-        slider.heightAnchor.constraint(equalToConstant: 30).isActive = true
-
-        startButton.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
-        startButton.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: 100).isActive = true
-        startButton.widthAnchor.constraint(equalToConstant: 100).isActive = true
-        startButton.heightAnchor.constraint(equalToConstant: 30).isActive = true
-        
-    }
     
-    @objc func startGame() {
-        let numSlider = Int(self.slider.value)
-        if numSlider > self.number {
-            self.points += 100 - numSlider + self.number
-        } else if numSlider < self.number {
-            self.points += 100 - self.number + numSlider
-        } else {
-            self.points += 100
-        }
-        
-        if self.round == 5 {
-            let alert = UIAlertController(
-                title: "Game over",
-                message: "You earned \(self.points) points",
-                preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "Start again", style: .default))
-            self.present(alert, animated: true, completion: nil)
-            self.round = 1
-            self.points = 0
-        } else {
-            self.round += 1
-        }
-    }
-    
-    override func loadView() {
-        super.loadView()
-        
-        view.addSubview(numberLabel)
-        view.addSubview(startButton)
-        view.addSubview(slider)
-        
-        print("loadView")
-        
-    }
-    
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        print("viewWillAppear")
-        
-    }
-    
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-        print("viewDidAppear")
-    }
-    
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        print("viewWillDisappear")
-    }
-
-    override func viewDidDisappear(_ animated: Bool) {
-        super.viewDidDisappear(animated)
-        print("viewDidDisappear")
-    }
-
 }
+
 
